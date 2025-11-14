@@ -16,6 +16,8 @@ function V = ECE569_se3ToVec(se3mat)
 %     4
 %     5
 %     6
-
-% V = ... TODO
+w_hat = se3mat(1:3,1:3);
+w     = ECE569_so3ToVec(w_hat);
+v     = se3mat(1:3,4);
+V = [w;v];
 end

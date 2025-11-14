@@ -27,12 +27,12 @@ dt = 0.002;
 t = 0:dt:tfinal;
 alpha = zeros(size(t));
 for i=1:length(t)-1
-    xdot = 0.16*2*cos(2*alpha(i));
-    ydot = 0.111*3*cos(3*alpha(i));
+    xdot = (xd(i+1)-xd(i))/dt;
+    ydot = (yd(i+1)-yd(i))/dt;
     % equation (7) in the lab assignment
-    alpha(i+1) = alpha(i) + dt*(c*g(t(i),tfinal,1))/(sqrt(xdot^2+ydot^2));
+    alpha(i+1) = alpha(i) + dt*(c*g(t(i),tfinal,0.5))/(sqrt(xdot^2+ydot^2));
 end
-figure()
+
 plot(t,alpha,'LineWidth',2); title('Plot of \alpha(t)');
 grid on; xlabel('time (s)'); ylabel('\alpha(t)');
 yline(T,'k--','LineWidth',2); 
@@ -43,7 +43,6 @@ x = 0.16*sin(2*alpha);
 y = 0.111*sin(3*alpha);
 %[text] Plot the speed of the trajectory as function of time.
 v = sqrt( (diff(x)/dt).^2 + (diff(y)/dt).^2 );
-figure()
 plot(dt:dt:tfinal,v,'LineWidth',3); hold on;
 yline(c,'k--'); 
 ylim([0 0.3])

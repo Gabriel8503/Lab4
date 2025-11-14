@@ -19,9 +19,15 @@ function expmat = ECE569_MatrixLog6(T)
 [R, p] = ECE569_TransToRp(T);
 omgmat = ECE569_MatrixLog3(R);
 if isequal(omgmat, zeros(3))
-    % expmat = ...
+    expmat = [zeros(3),p;zeros(1,4)];
 else
-    % theta = ...
-    % expmat = ...
+    theta = acos((trace(R) - 1)/2);
+    omgmat_unit= (omgmat / theta);
+    % From Modern Robotics (3.92)
+    Vinv     = eye(3)/theta ...
+            - 0.5 * omgmat_unit ...
+            + (1/theta - 0.5*cot(theta/2)) * (omgmat_unit*omgmat_unit);
+    v = Vinv * p;
+    expmat = [omgmat,v*theta;zeros(1,4)];
 end
 end

@@ -15,5 +15,9 @@ function se3mat = ECE569_VecTose3(V)
 %    -2     1     0     6
 %     0     0     0     0 
 
-% se3mat = ... TODO
+w = V(1:3);
+v = V(4:6);
+
+w_hat  = ECE569_VecToso3(w);
+se3mat = [w_hat,v;zeros(1,4)];
 end
