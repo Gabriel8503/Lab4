@@ -106,7 +106,10 @@ T0 = T0_body;
 N = length(t);
 Tsd = zeros(4,4,N);
 for i=1:N
-    % Tsd(:,:,i) = ...
+    R  = eye(3);
+    p  = [x(i);y(i);0];
+    Td = [R,p;zeros(1,3),1];
+    Tsd(:,:,i) = T0*Td;
 end
 %%
 %[text] (2d) Plot (x,y,z) in the s frame
