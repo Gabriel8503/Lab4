@@ -3,7 +3,6 @@ clear all;
 close all;
 clc;
 %[text] (1a) Calculate arc length of Lissajous Curve.
-% TODO: replace T, xd, yd with your our lissajous curve
 T = 2*pi;
 t = linspace(0,T,1000);
 xd = 0.16*sin(2*t);
@@ -14,7 +13,6 @@ for i=1:length(t)-1
     d = d + sqrt((xd(i+1)-xd(i))^2+(yd(i+1)-yd(i))^2);
 end
 %[text] Determine the average speed, $c$, of end effector over `tfinal` seconds.
-% TODO: replace tfinal with your code
 tfinal = 10;
 
 % calculate average speed
@@ -38,7 +36,6 @@ grid on; xlabel('time (s)'); ylabel('\alpha(t)');
 yline(T,'k--','LineWidth',2); 
 legend('\alpha','T (period)','Location','southeast')
 %[text] (1c) Combine all trajectories together.
-% TODO: replace with your own lissajous curve
 x = 0.16*sin(2*alpha);
 y = 0.111*sin(3*alpha);
 %[text] Plot the speed of the trajectory as function of time.
@@ -95,7 +92,6 @@ theta0 = [-1.6800   -1.4018   -1.8127   -2.9937   -0.8857   -0.0696]';
 % calculate the 4x4 matrix representing the transition
 % from end effector frame {b} to the base frame {s} at t=0: Tsb(0)
 
-% TODO: implement ECE569_FKinSpace and ECE569_FKinBody
 T0_space = ECE569_FKinSpace(M,S,theta0)
 T0_body = ECE569_FKinBody(M,B,theta0)
 T0_space-T0_body
@@ -116,6 +112,7 @@ end
 xs = Tsd(1,4,:);
 ys = Tsd(2,4,:);
 zs = Tsd(3,4,:);
+figure();
 plot3(xs(:), ys(:), zs(:), 'LineWidth', 1)
 title('Trajectory \{s\} frame')
 xlabel('x (m)')
@@ -149,11 +146,9 @@ thetaAll(:,1) = theta0;
 f = waitbar(0,['Inverse Kinematics (1/',num2str(N),') complete.']);
 
 for i=2:N
-    % TODO: use previous solution as current guess
-    % initialguess = ...
+    initialguess = thetaAll(:,i-1);
 
-    % TODO: calculate thetaSol for Tsd(:,:,i) with initial guess
-    % [thetaSol, success] = ...
+    [thetaSol, success] = ECE569_IKinBody(B,M,Tsd(:,:,i),initialguess,1e-6,1e-6);
     if (~success)
         close(f);
         error('Error. \nCould not perform IK at index %d.',i)
@@ -165,6 +160,7 @@ close(f);
 %%
 %[text] (3c) Verify that the joint angles don't change very much
 dj = diff(thetaAll');
+figure();
 plot(t(1:end-1), dj)
 title('First Order Difference in Joint Angles')
 legend('J1','J2','J3','J4','J5','J6','Location','northeastoutside')
@@ -175,13 +171,13 @@ ylabel('first order difference')
 %[text] (3d) Verify that the joints we found actually trace out our trajectory (forward kinematics)
 actualTsd = zeros(4,4,N);
 for i=1:N
-    % TODO: use forward kinematics to calculate Tsd from our thetaAll
-    % actualTsd(:,:,i) = ... 
+    actualTsd(:,:,i) = T0*ECE569_FKinBody(M,B,thetaAll(:,i));
 end
 
 xs = actualTsd(1,4,:);
 ys = actualTsd(2,4,:);
 zs = actualTsd(3,4,:);
+figure();
 plot3(xs(:), ys(:), zs(:), 'LineWidth', 1)
 title('Verified Trajectory \{s\} frame')
 xlabel('x (m)')
@@ -197,8 +193,9 @@ hold off
 %[text] (3e) Verify that the end effector does not enter a kinematic singularity, by plotting the determinant of your body jacobian
 body_dets = zeros(N,1);
 for i=1:N
-    body_dets(i) = det(...);
+    body_dets(i) = det(ECE569_JacobianBody(B,thetaAll(:,i)));
 end
+figure();
 plot(t, body_dets)
 title('Manipulability')
 grid on
@@ -213,7 +210,7 @@ led = ones(N,1);
 data = [t' thetaAll' led];
 
 % TODO: change the csv filename to your purdue ID
-% writematrix(data, 'ldihel.csv')
+writematrix(data, 'gturak.csv')
 
 %[appendix]{"version":"1.0"}
 %---

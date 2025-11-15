@@ -18,5 +18,5 @@ function invT = ECE569_TransInv(T)
 %     0     0     0     1
 
 [R, p] = ECE569_TransToRp(T);
-% invT = ...
+invT   = [R',-R'*p;zeros(1,3),1];
 end
