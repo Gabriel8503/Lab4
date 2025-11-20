@@ -1,155 +1,107 @@
-%% [text] Step 1: Create Trapezoidal Velocity Trajectories
+%[text] Step 1: Create Trapezoidal Velocity Trajectories
 clear all;
 close all;
 clc;
-
-% [text] (1a) Calculate arc length of your imported trajectory
-load("Total_Path.mat");    
-load("LED_Path.mat")
-
+%[text] (1a) Calculate arc length of Lissajous Curve.
+load("Total_Path.mat");
+T = 2*pi;
 xd = Total_Path(:,1);
 yd = Total_Path(:,2);
 
-% Compute arc length numerically
 d = 0;
-for i = 1:length(xd)-1
-    d = d + sqrt( (xd(i+1)-xd(i))^2 + (yd(i+1)-yd(i))^2 );
+for i=1:length(xd)-1
+    d = d + sqrt((xd(i+1)-xd(i))^2+(yd(i+1)-yd(i))^2);
 end
-
-
-% Desired final time
+%[text] Determine the average speed, $c$, of end effector over `tfinal` seconds.
 tfinal = 60;
 
-% [text] Determine the average speed, c, of end effector over tfinal
-c = d / tfinal;  
+% calculate average speed
+c = d/tfinal;
 
-
-% [text] (1b) Forward-Euler method for α(t)
-% Normalized trapezoidal velocity function g(t)
-g = @(t, T, ta) (T/(T-ta)) * ( ...
-      (t < ta) .* (t/ta) + ...
-      (t >= ta & t <= (T - ta)) .* 1 + ...
-      (t > (T - ta)) .* ((T - t)/ta) ...
-);
-
-T = 2*pi;          % α runs from 0 to T just like Lissajous case
-dt = 1/500;        % step size
-t = 0:dt:tfinal;   % simulation time
-
+%[text] Use forward-euler method to numerically approximate $\\alpha(t)$
+% normalized trapezoidal curve
+g = @(t, T, ta) (T/(T-ta))*((t < ta) .* (t / ta) + (t >= ta & t <= (T - ta)) .* 1 + (t > (T - ta)) .* ((T - t) / ta));
+dt = 0.002;
+t = 0:dt:tfinal;
+N = length(t);
+vmax   = 0.25;
 alpha = zeros(size(t));
 
-% Precompute segment lengths for path parameterization (arc-length)
-seg_lengths = [0; cumsum(sqrt(diff(xd).^2 + diff(yd).^2))];
+seg_lengths = [0, cumsum(sqrt(diff(xd).^2 + diff(yd).^2))'];
 L = seg_lengths(end);
 
-% Acceleration time (CHANGEABLE)
-ta = 5;
 
-for k = 1:length(t)-1
-
-    % Map alpha(k) → current arc-length s(k)
-    s_cur = (alpha(k)/T) * L;
-
-    % Find segment index
+for i=1:N-1
+    s_cur = (alpha(i)/T) * seg_lengths(end);
     idx = find(seg_lengths <= s_cur, 1, 'last');
-    if idx >= length(seg_lengths)
-        idx = length(seg_lengths)-1;
+    if idx >= length(xd)
+       idx = length(xd)-1; 
     end
-
-    % Compute unit tangent direction at the segment
     dx = xd(idx+1) - xd(idx);
     dy = yd(idx+1) - yd(idx);
-    seg_d = sqrt(dx^2 + dy^2);
+    seg_dist = sqrt(dx^2 + dy^2);
 
-    if seg_d > 0
-        xdot = dx / seg_d;
-        ydot = dy / seg_d;
+    if seg_dist ~= 0
+        xdot = dx / seg_dist;
+        ydot = dy / seg_dist;
     else
         xdot = 0; ydot = 0;
     end
 
-    % Desired ds/dt = trapezoid, limited to 0.25 m/s
-    ds_dt = min(c * g(t(k), tfinal, ta), 0.25);
+    % equation (7) in the lab assignment
+    ds_dt = min(c * g(t(i), tfinal, 5), 0.25);
 
-    % Equation (7): α_dot = (ds/dt) * (T / L)
-    alpha(k+1) = alpha(k) + dt * ds_dt * (T / L);
-
+    alpha(i+1) = alpha(i) + dt * ds_dt * (T / seg_lengths(end));
 end
-
-% [text] Plot α(t)
+%alpha(alpha>1) = 1;
 figure()
-plot(t, alpha, 'LineWidth', 2);
-grid on;
-xlabel('time (s)');
-ylabel('\alpha(t)');
-title('Plot of \alpha(t)');
-yline(T, 'k--', 'LineWidth', 2);
-legend('\alpha(t)', 'T (period)', 'Location', 'southeast');
+plot(t,alpha,'LineWidth',2); title('Plot of \alpha(t)');
+grid on; xlabel('time (s)'); ylabel('\alpha(t)');
+yline(T,'k--','LineWidth',2); 
+legend('\alpha','T (period)','Location','southeast')
+%[text] (1c) Combine all trajectories together.
+% Precompute unit tangents for each segment
+dx = diff(xd);
+dy = diff(yd);
+seg_dist = sqrt(dx.^2 + dy.^2);
+ux = dx ./ seg_dist;
+uy = dy ./ seg_dist;
 
-% [text] (1c) Generate retimed trajectory x[k], y[k]
+% Compute s(t)
+s = alpha * seg_lengths(end);
 
-% Allocate memory
-Nalpha = length(alpha);
-x = zeros(size(alpha));
-y = zeros(size(alpha));
-LED = zeros(size(alpha)); 
+% Allocate new trajectory
+x = zeros(size(s));
+y = zeros(size(s));
 
-for k = 1:Nalpha
-    s_k = (alpha(k)/T) * L;
-
-    idx_led = find(seg_lengths <= s_k, 1, 'last');
-    if isempty(idx_led)
-        idx_led = 1;
-    elseif idx_led >= length(seg_lengths)
-        idx_led = length(seg_lengths) - 1;
+for k = 1:length(s)
+    % Find segment containing arc length s(k)
+    idx = find(seg_lengths <= s(k), 1, 'last');
+    if idx == length(seg_lengths)
+        idx = idx - 1;
     end
-    % safe clamp if LED_Path shorter/longer
-    idx_led = max(1, min(idx_led, length(LED_Path)));
-    LED(k) = LED_Path(idx_led);
     
-    % Find segment index for position reconstruction
-    idx = find(seg_lengths <= s_k, 1, 'last');
-    if isempty(idx)
-        idx = 1;
-    elseif idx >= length(seg_lengths)
-        idx = length(seg_lengths) - 1;
-    end
+    % Remaining distance into segment
+    ds = s(k) - seg_lengths(idx);
 
-    ds = s_k - seg_lengths(idx);
-
-    dx = xd(idx+1) - xd(idx);
-    dy = yd(idx+1) - yd(idx);
-    seg_d = sqrt(dx^2 + dy^2);
-
-    if seg_d > 0
-        ux = dx / seg_d;
-        uy = dy / seg_d;
-    else
-        ux = 0; uy = 0;
-    end
-
-    x(k) = xd(idx) + ux * ds;
-    y(k) = yd(idx) + uy * ds;
+    % Compute position by linearizing along tangent
+    x(k) = xd(idx) + ux(idx)*ds;
+    y(k) = yd(idx) + uy(idx)*ds;
 end
 
-% Ensure final LED defined
-if Nalpha >= 2
-    LED(end) = LED(end-1);
-end
-
-% [text] Plot the speed profile v[k]
-v = sqrt( diff(x).^2 + diff(y).^2 ) / dt;
-
+%[text] Plot the speed of the trajectory as function of time.
+v = sqrt( (diff(x)/dt).^2 + (diff(y)/dt).^2 );
 figure()
-plot(t(2:end), v, 'LineWidth', 3); hold on;
-yline(c, 'k--', 'LineWidth', 2);        % average required velocity
-yline(0.25, 'r--', 'LineWidth', 2);    % velocity limit
+plot(dt:dt:tfinal,v,'LineWidth',3); hold on;
+yline(c,'k--'); 
+%ylim([0 0.3])
+yline(0.25,'r--')
+hold off;
+title('Trajectory Velocity')
 grid on;
-xlabel('time (s)');
-ylabel('velocity (m/s)');
-title('Trajectory Velocity');
-legend('velocity', 'average velocity', 'velocity limit', 'Location', 'south');
-
+xlabel('time (s)')
+ylabel('velocity (m/s)')
+legend('velocity', 'average velocity', 'velocity limit','Location','south')
 %%
 %[text] ## Step 2: Forward Kinematics
 %[text] (2c) Calculate T0
@@ -306,10 +258,10 @@ ylabel('det of J_B')
 led = ones(N,1);
 
 % save to the CSV file
-data = [t' thetaAll' LED(:)];
+data = [t' thetaAll' led];
 
 % TODO: change the csv filename to your purdue ID
-writematrix(data, 'gturak_bonus.csv')
+%writematrix(data, 'gturak_bonus.csv')
 
 %[appendix]{"version":"1.0"}
 %---
