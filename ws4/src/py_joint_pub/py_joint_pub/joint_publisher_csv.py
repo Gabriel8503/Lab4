@@ -37,8 +37,8 @@ class JointPublisherCSV(Node):
         self.trail_marker.id = 0
         self.trail_marker.type = Marker.POINTS
         self.trail_marker.action = Marker.ADD
-        self.trail_marker.scale.x = 0.01
-        self.trail_marker.scale.y = 0.01
+        self.trail_marker.scale.x = 0.005
+        self.trail_marker.scale.y = 0.005
         self.trail_marker.color.r = 1.0
         self.trail_marker.color.g = 0.0
         self.trail_marker.color.b = 0.0
