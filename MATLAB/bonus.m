@@ -24,7 +24,7 @@ tfinal = 60;
 c = d / tfinal;  
 
 
-% [text] (1b) Forward-Euler method for α(t)
+% [text] (1b) Forward-Euler method for alpha(t)
 % Normalized trapezoidal velocity function g(t)
 g = @(t, T, ta) (T/(T-ta)) * ( ...
       (t < ta) .* (t/ta) + ...
@@ -32,8 +32,8 @@ g = @(t, T, ta) (T/(T-ta)) * ( ...
       (t > (T - ta)) .* ((T - t)/ta) ...
 );
 
-T = 2*pi;          % α runs from 0 to T just like Lissajous case
-dt = 1/500;        % step size
+T = 2*pi;          % alpha runs from 0 to T just like Lissajous case
+dt = 1/100;        % step size
 t = 0:dt:tfinal;   % simulation time
 
 alpha = zeros(size(t));
@@ -71,12 +71,12 @@ for k = 1:length(t)-1
     % Desired ds/dt = trapezoid, limited to 0.25 m/s
     ds_dt = min(c * g(t(k), tfinal, ta), 0.25);
 
-    % Equation (7): α_dot = (ds/dt) * (T / L)
+    % Equation (7): alpha_dot = (ds/dt) * (T / L)
     alpha(k+1) = alpha(k) + dt * ds_dt * (T / L);
 
 end
 
-% [text] Plot α(t)
+% [text] Plot alpha(t)
 figure()
 plot(t, alpha, 'LineWidth', 2);
 grid on;
