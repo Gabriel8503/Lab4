@@ -33,7 +33,7 @@ g = @(t, T, ta) (T/(T-ta)) * ( ...
 );
 
 T = 2*pi;          % alpha runs from 0 to T just like Lissajous case
-dt = 1/10;         % step size
+dt = 1/100;        % step size
 t = 0:dt:tfinal;   % simulation time
 
 alpha = zeros(size(t));
